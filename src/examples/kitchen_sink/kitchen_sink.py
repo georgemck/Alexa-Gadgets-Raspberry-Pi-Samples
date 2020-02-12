@@ -8,12 +8,17 @@
 
 import logging
 import sys
+from gpiozero import LED
 
 from agt import AlexaGadget
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger(__name__)
 logging.getLogger('agt.alexa_gadget').setLevel(logging.DEBUG)
+
+GPIO_PIN = 4 # number 7 under 3.3volts
+
+LED = LED(GPIO_PIN)
 
 class KitchenSinkGadget(AlexaGadget):
     """
@@ -37,6 +42,18 @@ class KitchenSinkGadget(AlexaGadget):
         pass
 
     def on_alexa_gadget_statelistener_stateupdate(self, directive):
+        """
+        Turns an LED on or off in sync with the detection
+        of the wake word
+        """
+        for state in directive.payload.states:
+            if state.name == 'wakeword':
+                if state.value == 'active':
+                    logger.info('Wake word active - toggle LED')
+                    LED.on()
+                elif state.value == 'cleared':
+                    logger.info('Wake word cleared - toggle LED')
+                    LED.off()
         """
         Alexa.Gadget.StateListener StateUpdate directive received.
 
@@ -124,4 +141,6 @@ class KitchenSinkGadget(AlexaGadget):
 
 
 if __name__ == '__main__':
-    KitchenSinkGadget().main()
+    try:
+        KitchenSinkGadget().main()
+    finally:
